@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Tin Học 5 - Đấu Trường Số</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        
+        :root {
+            --primary: #6366f1;
+            --secondary: #06b6d4;
+            --bg-dark: #020617;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg-dark);
+            color: white;
+            margin: 0;
+            overflow-x: hidden;
+            display: flex;
+            justify-content: center;
+        }
+
+        .glass {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 450px;
+            min-height: 100vh;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .glow-bg {
+            position: fixed;
+            width: 350px; height: 350px;
+            filter: blur(120px);
+            z-index: -1;
+            opacity: 0.3;
+            border-radius: 50%;
+        }
+
+        .map-path {
+            position: absolute;
+            top: 40px; bottom: 40px;
+            left: 50%;
+            width: 4px;
+            background: linear-gradient(to bottom, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.5), rgba(6, 182, 212, 0.1));
+            transform: translateX(-50%);
+            z-index: 1;
+        }
+
+        .level-node {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            display: flex;
+            margin-bottom: 3.5rem;
+        }
+
+        .level-node.left { justify-content: flex-start; padding-left: 10%; }
+        .level-node.right { justify-content: flex-end; padding-right: 10%; }
+        .level-node.center { justify-content: center; }
+
+        .level-circle {
+            width: 80px; height: 80px;
+            border-radius: 28px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(15, 23, 42, 0.8);
+            border: 2px solid rgba(255,255,255,0.1);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        .level-active .level-circle {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            border-color: rgba(255,255,255,0.4);
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.4);
+        }
+
+        .level-locked .level-circle {
+            background: rgba(30, 41, 59, 0.4);
+            border-color: rgba(255, 255, 255, 0.05);
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .level-node:not(.level-locked):hover .level-circle { transform: scale(1.15) rotate(5deg); }
+
+        .fade-up { animation: fadeUp 0.5s ease-out forwards; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1.5px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease;
+        }
+        .option-btn:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .sound-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="glow-bg bg-indigo-600 -top-20 -left-20"></div>
+<div class="glow-bg bg-cyan-500 -bottom-20 -right-20"></div>
+
+<button onclick="toggleSound()" class="sound-toggle glass" id="sound-btn">
+    <svg id="sound-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+</button>
+
+<div id="app" class="main-container">
+    
+    <!-- HEADER -->
+    <div id="main-header" class="flex justify-between items-center mb-10 px-2">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-cyan-500 flex items-center justify-center shadow-xl">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div>
+                <span class="block text-[10px] font-extrabold text-indigo-400 tracking-[0.25em] uppercase">Tin Học 5</span>
+                <span class="text-2xl font-black text-white uppercase tracking-tight">Digital Arena</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN START -->
+    <div id="screen-start" class="fade-up space-y-6">
+        <div class="text-center py-4">
+            <h2 class="text-4xl font-black text-white mb-2 italic uppercase tracking-tighter">Bắt đầu hành trình</h2>
+            <p class="text-slate-400 text-sm font-semibold uppercase tracking-widest">Chọn độ khó để bắt đầu</p>
+        </div>
+
+        <div class="space-y-4">
+            <button onmouseenter="sfx('hover')" onclick="goMode('rookie')" class="w-full glass p-6 rounded-[2.5rem] flex items-center gap-6 group transition-all hover:scale-[1.02]">
+                <div class="w-16 h-16 rounded-[1.5rem] bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-white text-xl uppercase leading-tight">Tân Binh</div>
+                    <div class="text-xs text-slate-400 font-semibold uppercase mt-1">Cấp độ nền tảng (50 câu)</div>
+                </div>
+            </button>
+
+            <button onmouseenter="sfx('hover')" onclick="goMode('warrior')" class="w-full glass p-6 rounded-[2.5rem] flex items-center gap-6 group transition-all hover:scale-[1.02]">
+                <div class="w-16 h-16 rounded-[1.5rem] bg-orange-500/10 text-orange-400 flex items-center justify-center border border-orange-500/20 group-hover:bg-orange-500 group-hover:text-white transition-all duration-300">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-white text-xl uppercase leading-tight">Chiến Binh</div>
+                    <div class="text-xs text-slate-400 font-semibold uppercase mt-1">Ứng dụng & Kỹ năng (50 câu)</div>
+                </div>
+            </button>
+
+            <button onmouseenter="sfx('hover')" onclick="goMode('legend')" class="w-full glass p-6 rounded-[2.5rem] flex items-center gap-6 group transition-all hover:scale-[1.02]">
+                <div class="w-16 h-16 rounded-[1.5rem] bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20 group-hover:bg-purple-500 group-hover:text-white transition-all duration-300">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                </div>
+                <div class="text-left">
+                    <div class="font-black text-white text-xl uppercase leading-tight">Huyền Thoại</div>
+                    <div class="text-xs text-slate-400 font-semibold uppercase mt-1">Thuật toán & Scratch (50 câu)</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- SCREEN LEVELS -->
+    <div id="screen-levels" class="hidden fade-up space-y-8 flex-1">
+        <div class="flex items-center justify-between">
+            <button onmouseenter="sfx('hover')" onclick="switchScreen('screen-start')" class="w-12 h-12 glass rounded-2xl flex items-center justify-center text-indigo-400">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+            </button>
+            <h2 id="level-title" class="text-xl font-black text-white tracking-[0.2em] uppercase"></h2>
+            <div class="w-12"></div>
+        </div>
+
+        <div class="relative py-10 px-4 flex-1">
+            <div class="map-path"></div>
+            <div id="map-container" class="relative"></div>
+        </div>
+    </div>
+
+    <!-- SCREEN QUIZ -->
+    <div id="screen-quiz" class="hidden fade-up h-full flex flex-col flex-1">
+        <div class="flex justify-between items-center mb-6">
+            <div class="glass px-4 py-2 rounded-xl">
+                <span class="text-[12px] font-black text-indigo-400 uppercase tracking-widest" id="q-lesson">CẤP ĐỘ 1</span>
+            </div>
+            <button onmouseenter="sfx('hover')" onclick="confirmExit()" class="w-10 h-10 flex items-center justify-center text-slate-500">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
+        </div>
+
+        <div class="glass p-6 rounded-3xl mb-8 flex items-center justify-between border-none">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white shadow-lg">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M12 2v20M2 12h20"/></svg>
+                </div>
+                <span class="text-2xl font-black" id="score-val">0</span>
+            </div>
+            <div class="text-right">
+                <span class="block text-[10px] font-bold text-slate-400 uppercase">Tiến trình</span>
+                <span class="text-sm font-black" id="q-progress">1 / 10</span>
+            </div>
+        </div>
+
+        <div id="q-content" class="flex-1">
+            <div class="mb-10">
+                <h2 id="q-text" class="text-2xl font-bold leading-snug"></h2>
+            </div>
+            <div id="q-options" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- SCREEN RESULT -->
+    <div id="screen-result" class="hidden fade-up text-center py-10 flex flex-col justify-center flex-1">
+        <div class="relative w-44 h-44 mx-auto mb-10">
+            <div id="res-glow" class="absolute inset-0 bg-indigo-600/30 blur-3xl rounded-full"></div>
+            <div class="relative w-full h-full glass rounded-[3.5rem] flex items-center justify-center border-2 border-white/10">
+                <span class="text-7xl" id="res-icon">🏆</span>
+            </div>
+        </div>
+        
+        <h2 class="text-4xl font-black text-white mb-2 uppercase italic" id="res-msg">KẾT QUẢ</h2>
+        <p class="text-slate-400 font-bold text-sm uppercase tracking-widest mb-2" id="res-correct-count">0 / 10 CÂU ĐÚNG</p>
+        <p class="text-indigo-400 font-black text-4xl mb-12" id="res-score">0 ĐIỂM</p>
+        
+        <div class="space-y-4 px-4" id="res-actions"></div>
+    </div>
+
+</div>
+
+<div id="modal-exit" class="fixed inset-0 hidden bg-slate-950/90 backdrop-blur-md z-[100] flex items-center justify-center p-8">
+    <div class="glass p-10 rounded-[3.5rem] w-full max-w-[360px] text-center border-2 border-white/5">
+        <h3 class="text-2xl font-black text-white mb-3 uppercase">Thoát ngay?</h3>
+        <p class="text-slate-400 text-sm mb-10 leading-relaxed">Bạn sẽ mất toàn bộ điểm số của màn chơi này nếu thoát.</p>
+        <div class="flex flex-col gap-3">
+            <button onclick="exitNow()" class="py-5 bg-red-500 text-white rounded-2xl font-black uppercase tracking-wider shadow-lg shadow-red-500/20">Xác nhận thoát</button>
+            <button onclick="closeExit()" class="py-4 glass text-white rounded-2xl font-bold uppercase text-xs">Tiếp tục chơi</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- AUDIO ENGINE (Giữ nguyên) ---
+    const AudioEngine = (() => {
+        let context = null;
+        let isMuted = false;
+        let bgOsc = null;
+        let bgGain = null;
+        const init = () => { if (!context) context = new (window.AudioContext || window.webkitAudioContext)(); };
+        const playSfx = (type) => {
+            if (!context || isMuted) return;
+            const now = context.currentTime;
+            const osc = context.createOscillator();
+            const g = context.createGain();
+            switch(type) {
+                case 'hover': osc.frequency.setValueAtTime(600, now); osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05); g.gain.setValueAtTime(0.05, now); g.gain.linearRampToValueAtTime(0, now + 0.05); osc.start(); osc.stop(now + 0.05); break;
+                case 'click': osc.type = 'square'; osc.frequency.setValueAtTime(400, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.1); g.gain.setValueAtTime(0.1, now); g.gain.linearRampToValueAtTime(0, now + 0.1); osc.start(); osc.stop(now + 0.1); break;
+                case 'correct': [523.25, 659.25, 783.99].forEach((f, i) => { const o = context.createOscillator(); const gn = context.createGain(); o.frequency.setValueAtTime(f, now + i*0.08); gn.gain.setValueAtTime(0.08, now + i*0.08); gn.gain.exponentialRampToValueAtTime(0.01, now + i*0.08 + 0.3); o.connect(gn); gn.connect(context.destination); o.start(now + i*0.08); o.stop(now + i*0.08 + 0.3); }); return;
+                case 'wrong': osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.linearRampToValueAtTime(70, now + 0.2); g.gain.setValueAtTime(0.1, now); g.gain.linearRampToValueAtTime(0, now + 0.2); osc.start(); osc.stop(now + 0.2); break;
+            }
+            osc.connect(g); g.connect(context.destination);
+        };
+        const startBg = (mode) => { if (!context || isMuted) return; if (bgOsc) stopBg(); const freqs = { rookie: 110, warrior: 146.83, legend: 164.81 }; bgOsc = context.createOscillator(); bgGain = context.createGain(); bgOsc.type = 'sine'; bgOsc.frequency.setValueAtTime(freqs[mode] || 110, context.currentTime); bgGain.gain.setValueAtTime(0, context.currentTime); bgGain.gain.linearRampToValueAtTime(0.02, context.currentTime + 2); bgOsc.connect(bgGain); bgGain.connect(context.destination); bgOsc.start(); };
+        const stopBg = () => { if (bgGain) { bgGain.gain.linearRampToValueAtTime(0, context.currentTime + 0.5); setTimeout(() => { if(bgOsc) { try { bgOsc.stop(); } catch(e) {} bgOsc = null; } }, 500); } };
+        return { init, playSfx, startBg, stopBg, toggleMute: () => { isMuted = !isMuted; if(isMuted) stopBg(); return isMuted; } };
+    })();
+    function sfx(type) { AudioEngine.playSfx(type); }
+    function toggleSound() { const muted = AudioEngine.toggleMute(); document.getElementById('sound-icon').innerHTML = muted ? '<path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6"/>' : '<path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/>'; }
+
+    // --- 150+ QUESTIONS DATABASE (50 per category) ---
+    const questionsPool = {
+        rookie: [
+            { q: "Bộ não của máy tính là thiết bị nào?", a: ["CPU", "RAM", "Màn hình", "Chuột"], c: 0 },
+            { q: "Thiết bị nào dùng để nhập dữ liệu chữ và số?", a: ["Bàn phím", "Máy in", "Màn hình", "Loa"], c: 0 },
+            { q: "1 Byte bằng bao nhiêu bit?", a: ["8 bit", "10 bit", "100 bit", "1024 bit"], c: 0 },
+            { q: "Phần mềm nào giúp em truy cập trang web?", a: ["Trình duyệt", "Word", "Excel", "Paint"], c: 0 },
+            { q: "Thiết bị nào sau đây là thiết bị ra?", a: ["Máy chiếu", "Chuột", "Bàn phím", "Micro"], c: 0 },
+            { q: "Ổ cứng dùng để làm gì?", a: ["Lưu trữ dữ liệu lâu dài", "Xử lý hình ảnh", "Kết nối internet", "Cung cấp điện"], c: 0 },
+            { q: "Chuột máy tính thuộc loại thiết bị nào?", a: ["Thiết bị vào", "Thiết bị ra", "Thiết bị lưu trữ", "Thiết bị xử lý"], c: 0 },
+            { q: "Loa dùng để đưa thông tin gì ra ngoài?", a: ["Âm thanh", "Hình ảnh", "Văn bản", "Số liệu"], c: 0 },
+            { q: "Thiết bị nào giúp máy tính kết nối mạng không dây?", a: ["Card Wi-Fi", "Ổ đĩa", "Máy quét", "Màn hình"], c: 0 },
+            { q: "Dữ liệu trong RAM sẽ thế nào khi tắt máy?", a: ["Bị mất sạch", "Vẫn còn đó", "Chuyển sang ổ cứng", "Tự sao lưu"], c: 0 },
+            { q: "Phần mềm Paint dùng để làm gì?", a: ["Vẽ hình", "Viết thư", "Tính toán", "Nghe nhạc"], c: 0 },
+            { q: "Biểu tượng thùng rác trên máy tính tên là gì?", a: ["Recycle Bin", "My Computer", "Browser", "Settings"], c: 0 },
+            { q: "Thiết bị nào để chụp ảnh đưa vào máy tính?", a: ["Webcam", "Máy in", "Loa", "Bàn phím"], c: 0 },
+            { q: "Nút trái chuột thường dùng để làm gì?", a: ["Chọn đối tượng", "Mở menu phụ", "Tắt máy", "Cuộn trang"], c: 0 },
+            { q: "Kích thước màn hình thường tính bằng đơn vị nào?", a: ["Inch", "Kg", "Lít", "Mét"], c: 0 },
+            { q: "Thư mục dùng để chứa gì?", a: ["Các tệp tin và thư mục con", "Dây cáp", "Bàn phím", "Điện năng"], c: 0 },
+            { q: "Tệp tin văn bản thường có đuôi là gì?", a: [".docx", ".mp3", ".jpg", ".exe"], c: 0 },
+            { q: "Phím dài nhất trên bàn phím là phím nào?", a: ["Space (Dấu cách)", "Enter", "Shift", "Caps Lock"], c: 0 },
+            { q: "Khi gõ phím, hai ngón cái đặt ở đâu?", a: ["Phím cách", "Phím Enter", "Phím Shift", "Phím Ctrl"], c: 0 },
+            { q: "Máy tính để bàn cần thiết bị nào để cung cấp điện?", a: ["Bộ nguồn", "Pin", "Thẻ nhớ", "Máy in"], c: 0 },
+            { q: "Phần mềm Windows là gì?", a: ["Hệ điều hành", "Trò chơi", "Phần mềm vẽ", "Trình duyệt"], c: 0 },
+            { q: "Lệnh Shut down dùng để làm gì?", a: ["Tắt máy tính", "Khởi động lại", "Mở cửa sổ", "Xóa tệp"], c: 0 },
+            { q: "Thiết bị nào giúp em nghe nhạc cá nhân?", a: ["Tai nghe", "Máy quét", "Bàn phím", "Chuột"], c: 0 },
+            { q: "Màn hình cảm ứng vừa là thiết bị vào vừa là thiết bị gì?", a: ["Thiết bị ra", "Thiết bị xử lý", "Thiết bị điện", "Thiết bị lưu"], c: 0 },
+            { q: "Đơn vị đo dung lượng nào lớn nhất dưới đây?", a: ["GB", "MB", "KB", "Byte"], c: 0 },
+            { q: "USB là thiết bị dùng để làm gì?", a: ["Lưu trữ di động", "Xử lý văn bản", "In ấn", "Quét ảnh"], c: 0 },
+            { q: "Tên tệp tin không được chứa ký tự nào?", a: ["/", "A", "1", "-"], c: 0 },
+            { q: "Muốn viết chữ hoa em nhấn giữ phím nào?", a: ["Shift", "Space", "Alt", "Tab"], c: 0 },
+            { q: "Phím Delete dùng để làm gì?", a: ["Xóa đối tượng", "Lưu bài", "Mở tệp", "Thoát game"], c: 0 },
+            { q: "Máy tính xách tay có tên tiếng Anh là gì?", a: ["Laptop", "PC", "Server", "iPad"], c: 0 },
+            { q: "Mạng Internet là mạng kết nối bao nhiêu máy tính?", a: ["Toàn cầu", "Trong một phòng", "Hai máy", "Mười máy"], c: 0 },
+            { q: "Google Chrome là gì?", a: ["Trình duyệt web", "Hệ điều hành", "Máy tính", "Tên ổ cứng"], c: 0 },
+            { q: "Thiết bị nào điều khiển con trỏ trên màn hình?", a: ["Chuột", "Loa", "Máy in", "Thanh RAM"], c: 0 },
+            { q: "Để sao lưu dữ liệu an toàn, em nên lưu ở đâu?", a: ["Ổ cứng ngoài hoặc Đám mây", "Thùng rác", "RAM", "Màn hình"], c: 0 },
+            { q: "Phím Esc thường nằm ở vị trí nào?", a: ["Góc trên bên trái", "Góc dưới bên phải", "Ở giữa", "Dưới cùng"], c: 0 },
+            { q: "Một Megabyte (MB) xấp xỉ bao nhiêu KB?", a: ["1024 KB", "100 KB", "10 KB", "10000 KB"], c: 0 },
+            { q: "Máy quét (Scanner) dùng để làm gì?", a: ["Đưa ảnh giấy vào máy tính", "In ảnh ra giấy", "Nghe nhạc", "Vẽ hình"], c: 0 },
+            { q: "Biểu tượng chữ 'W' màu xanh là phần mềm nào?", a: ["Microsoft Word", "Excel", "PowerPoint", "Windows"], c: 0 },
+            { q: "Thao tác nháy đúp chuột là gì?", a: ["Nhấn trái 2 lần nhanh", "Nhấn phải 2 lần", "Nhấn giữ chuột", "Nhấn trái 1 lần"], c: 0 },
+            { q: "Phần mềm máy tính được chia làm mấy loại chính?", a: ["2 (Hệ thống & Ứng dụng)", "3", "4", "5"], c: 0 },
+            { q: "CPU viết tắt của từ gì?", a: ["Central Processing Unit", "Computer Power User", "Control Play Unit", "Core Pro User"], c: 0 },
+            { q: "Khi làm việc quá lâu với máy tính, em nên làm gì?", a: ["Nghỉ ngơi mắt", "Nhìn sát màn hình", "Tắt đèn", "Uống nước ngọt"], c: 0 },
+            { q: "Bộ phận nào giúp máy tính hiển thị hình ảnh?", a: ["Card đồ họa (VGA)", "Loa", "Bàn phím", "Chuột"], c: 0 },
+            { q: "Phím Enter dùng để làm gì?", a: ["Xuống dòng hoặc xác nhận", "Xóa chữ", "Viết hoa", "Cách chữ"], c: 0 },
+            { q: "Thiết bị nào sau đây không thể thiếu để máy tính chạy?", a: ["Bộ vi xử lý (CPU)", "Máy in", "Loa", "Webcam"], c: 0 },
+            { q: "Mạng không dây (Wi-Fi) truyền dữ liệu qua gì?", a: ["Sóng vô tuyến", "Dây cáp", "Ánh sáng", "Âm thanh"], c: 0 },
+            { q: "Để gõ tiếng Việt, em cần phần mềm hỗ trợ nào?", a: ["Unikey", "Word", "Excel", "Windows"], c: 0 },
+            { q: "Máy tính bảng là thiết bị gì?", a: ["Thiết bị di động", "Thiết bị cố định", "Máy quét", "Máy in"], c: 0 },
+            { q: "Tệp hình ảnh thường có đuôi là gì?", a: [".png", ".txt", ".mp3", ".exe"], c: 0 },
+            { q: "Thanh nằm dưới cùng màn hình Windows gọi là gì?", a: ["Taskbar", "Menu", "Title bar", "Scroll bar"], c: 0 }
+        ],
+        warrior: [
+            { q: "Lưu trữ đám mây (Cloud) thực chất là lưu ở đâu?", a: ["Máy chủ trên Internet", "Trong ổ cứng cá nhân", "Trên bầu trời", "Trong bộ nhớ RAM"], c: 0 },
+            { q: "Phần mềm nào thuộc bộ Google Workspace?", a: ["Google Docs", "Photoshop", "Unikey", "Windows 11"], c: 0 },
+            { q: "Trong MS Word, Ctrl + S dùng để làm gì?", a: ["Lưu văn bản", "In văn bản", "Chọn tất cả", "Cắt văn bản"], c: 0 },
+            { q: "Trang web tìm kiếm phổ biến nhất thế giới là?", a: ["Google.com", "Facebook.com", "Youtube.com", "Shopee.vn"], c: 0 },
+            { q: "Hành vi nào là tôn trọng bản quyền?", a: ["Ghi rõ nguồn khi dùng ảnh", "Copy bài bạn", "Dùng lậu phần mềm", "Xóa tên tác giả"], c: 0 },
+            { q: "Để thuyết trình sinh động, em nên dùng phần mềm?", a: ["PowerPoint", "Calculator", "Notepad", "Paint"], c: 0 },
+            { q: "Virus máy tính thực chất là gì?", a: ["Một loại phần mềm độc hại", "Vi khuẩn sinh học", "Hư hỏng phần cứng", "Bụi trong máy"], c: 0 },
+            { q: "Trong PowerPoint, phím F5 dùng để?", a: ["Bắt đầu trình chiếu", "Thoát chương trình", "Lưu bài", "Xóa slide"], c: 0 },
+            { q: "Địa chỉ email nào sau đây là đúng cấu trúc?", a: ["hocsinh@gmail.com", "hocsinh.gmail.com", "hocsinh@gmail", "hocsinh#gmail.com"], c: 0 },
+            { q: "Khi nhận được link lạ từ người lạ, em nên?", a: ["Không nhấn vào", "Nhấn xem thử", "Gửi cho bạn bè", "Nhập mật khẩu vào"], c: 0 },
+            { q: "Mật khẩu mạnh nên bao gồm?", a: ["Chữ, số, ký tự đặc biệt", "Chỉ số", "Tên mình", "123456"], c: 0 },
+            { q: "Để cộng tác nhóm online hiệu quả nhất, nên dùng?", a: ["Tài liệu chia sẻ trực tuyến", "Gửi USB qua bưu điện", "Viết thư tay", "Chờ gặp nhau mới làm"], c: 0 },
+            { q: "Phần mềm mã nguồn mở là gì?", a: ["Cho phép xem và sửa mã", "Bắt buộc mua bản quyền", "Chỉ dùng cho di động", "Không cần cài đặt"], c: 0 },
+            { q: "Trong Word, để căn giữa đoạn văn em dùng?", a: ["Ctrl + E", "Ctrl + L", "Ctrl + R", "Ctrl + J"], c: 0 },
+            { q: "Trình duyệt web an toàn thường có biểu tượng?", a: ["Cái khóa màu xanh/xám", "Dấu gạch chéo đỏ", "Hình ngôi sao", "Hình tam giác"], c: 0 },
+            { q: "Bắt nạt qua mạng (Cyberbullying) là hành vi?", a: ["Vi phạm đạo đức và pháp luật", "Trò đùa bình thường", "Kỹ năng dùng mạng", "Được khuyến khích"], c: 0 },
+            { q: "Khi tìm thông tin về lịch sử, nguồn nào tin cậy hơn?", a: ["Trang web của Bảo tàng/Sách", "Bình luận trên Facebook", "Video Tik Tok lạ", "Tin đồn"], c: 0 },
+            { q: "Để chèn bảng trong Word, em vào thẻ nào?", a: ["Insert", "Home", "View", "Review"], c: 0 },
+            { q: "Định dạng tệp .pdf có ưu điểm gì?", a: ["Khó bị thay đổi định dạng", "Dễ dàng chỉnh sửa", "Dung lượng luôn lớn", "Chỉ đọc được trên máy tính"], c: 0 },
+            { q: "Phím tắt để quay lại thao tác vừa làm (Undo)?", a: ["Ctrl + Z", "Ctrl + Y", "Ctrl + X", "Ctrl + V"], c: 0 },
+            { q: "Trong Excel, dấu '=' dùng để bắt đầu gì?", a: ["Một công thức", "Một đoạn văn", "Một tiêu đề", "Một hình vẽ"], c: 0 },
+            { q: "Dịch vụ OneDrive của hãng nào?", a: ["Microsoft", "Google", "Apple", "Facebook"], c: 0 },
+            { q: "Tại sao nên đăng xuất tài khoản ở máy tính công cộng?", a: ["Tránh bị mất thông tin cá nhân", "Để máy chạy nhanh hơn", "Tiết kiệm điện", "Không cần thiết"], c: 0 },
+            { q: "Thẻ 'Transitions' trong PowerPoint dùng để?", a: ["Tạo hiệu ứng chuyển slide", "Đổi màu chữ", "Chèn ảnh", "Kiểm tra lỗi chính tả"], c: 0 },
+            { q: "Để lọc thông tin tìm kiếm trên Google chính xác hơn, nên?", a: ["Dùng từ khóa ngắn gọn", "Viết cả một bài văn", "Không dùng từ khóa", "Gõ bừa bãi"], c: 0 },
+            { q: "Internet Explorer đã được thay thế bằng?", a: ["Microsoft Edge", "Firefox", "Opera", "Safari"], c: 0 },
+            { q: "Đuôi tệp .mp4 thường là loại dữ liệu gì?", a: ["Video", "Âm thanh", "Văn bản", "Hình ảnh"], c: 0 },
+            { q: "Để chụp ảnh màn hình máy tính nhanh, dùng phím?", a: ["Print Screen (PrtSc)", "F1", "F2", "Esc"], c: 0 },
+            { q: "Cấu trúc một trang web gồm ngôn ngữ chính là?", a: ["HTML", "Scratch", "Paint", "English"], c: 0 },
+            { q: "Công cụ 'Format Painter' trong Word dùng để?", a: ["Sao chép định dạng", "Vẽ tranh", "Đổi font chữ", "Xóa đoạn văn"], c: 0 },
+            { q: "Để in văn bản nhanh, dùng tổ hợp phím?", a: ["Ctrl + P", "Ctrl + I", "Ctrl + N", "Ctrl + O"], c: 0 },
+            { q: "Tài sản số bao gồm những gì?", a: ["Ảnh, video, tài khoản mạng xã hội", "Bàn phím, chuột", "Máy in, loa", "Bàn ghế"], c: 0 },
+            { q: "Nên làm gì khi máy tính bị treo?", a: ["Khởi động lại máy", "Đập máy", "Rút điện đột ngột", "Kệ nó"], c: 0 },
+            { q: "Để chuyển đổi giữa các cửa sổ đang mở nhanh?", a: ["Alt + Tab", "Ctrl + Tab", "Shift + Tab", "Space + Tab"], c: 0 },
+            { q: "Thẻ 'Design' trong PowerPoint giúp gì?", a: ["Thay đổi chủ đề mẫu", "Viết nội dung", "Chèn video", "Cài đặt thời gian"], c: 0 },
+            { q: "Để tìm chính xác một cụm từ trên Google, dùng dấu?", a: ["Ngoặc kép \" \"", "Ngoặc đơn ( )", "Dấu hỏi ?", "Dấu chấm ."], c: 0 },
+            { q: "Phần mềm dùng thử (Trial) là gì?", a: ["Dùng miễn phí có thời hạn", "Dùng mãi mãi", "Bản đầy đủ nhất", "Chỉ dành cho chuyên gia"], c: 0 },
+            { q: "Trong Word, phím Tab dùng để?", a: ["Thụt đầu dòng", "Xuống dòng", "Viết hoa", "Xóa chữ"], c: 0 },
+            { q: "Để bảo vệ máy tính khỏi virus, nên cài?", a: ["Phần mềm diệt virus", "Game mới", "Nhiều trình duyệt", "Nhiều hình nền"], c: 0 },
+            { q: "Công cụ 'Header & Footer' dùng để?", a: ["Tạo đầu trang và chân trang", "Chèn bảng", "Đổi font chữ", "Vẽ sơ đồ"], c: 0 },
+            { q: "Bộ nhớ đệm của trình duyệt gọi là?", a: ["Cache", "History", "Bookmark", "Cookie"], c: 0 },
+            { q: "Để căn lề đều hai bên cho văn bản?", a: ["Ctrl + J", "Ctrl + L", "Ctrl + R", "Ctrl + E"], c: 0 },
+            { q: "Mạng LAN là mạng kết nối trong phạm vi?", a: ["Hẹp (nội bộ)", "Toàn cầu", "Cả nước", "Cả châu lục"], c: 0 },
+            { q: "Tại sao không nên chia sẻ vị trí hiện tại lên mạng?", a: ["Đảm bảo an toàn cá nhân", "Tốn pin", "Máy sẽ chậm", "Phạm luật"], c: 0 },
+            { q: "Biểu tượng ổ khóa màu xanh trên thanh địa chỉ có nghĩa?", a: ["Kết nối được mã hóa an toàn", "Trang web bị cấm", "Máy tính bị khóa", "Cần mật khẩu mới xem được"], c: 0 },
+            { q: "Để tạo một folder mới trên Desktop, nháy phải chọn?", a: ["New -> Folder", "New -> File", "Paste", "Properties"], c: 0 },
+            { q: "Phần mềm nào hỗ trợ gõ dấu tiếng Việt phổ biến?", a: ["Unikey", "Vietkey", "Gboard", "Tất cả đều đúng"], c: 3 },
+            { q: "Trong Excel, một ô được xác định bởi?", a: ["Cột và Hàng", "Màu sắc", "Kích thước", "Tên người nhập"], c: 0 },
+            { q: "Để lưu một trang web vào mục yêu thích dùng?", a: ["Bookmark", "History", "Download", "Print"], c: 0 },
+            { q: "Nút 'Refresh' (F5) trên trình duyệt dùng để?", a: ["Tải lại trang", "Đóng trang", "Mở trang mới", "Lưu trang"], c: 0 }
+        ],
+        legend: [
+            { q: "Trong Scratch, nhân vật chính được gọi là gì?", a: ["Sprite", "Script", "Stage", "Costume"], c: 0 },
+            { q: "Khối lệnh 'When Green Flag Clicked' thuộc nhóm?", a: ["Events", "Control", "Motion", "Looks"], c: 0 },
+            { q: "Để nhân vật di chuyển, em dùng nhóm lệnh?", a: ["Motion", "Sound", "Pen", "Sensing"], c: 0 },
+            { q: "Tọa độ X trong Scratch biểu thị chiều?", a: ["Ngang", "Dọc", "Xéo", "Sâu"], c: 0 },
+            { q: "Giới hạn tọa độ X của sân khấu Scratch là?", a: ["-240 đến 240", "-180 đến 180", "0 đến 480", "0 đến 360"], c: 0 },
+            { q: "Khối 'Repeat 10' là cấu trúc lập trình nào?", a: ["Cấu trúc lặp", "Cấu trúc rẽ nhánh", "Cấu trúc tuần tự", "Biến số"], c: 0 },
+            { q: "Khối 'If... then' là cấu trúc lập trình nào?", a: ["Cấu trúc rẽ nhánh", "Cấu trúc lặp", "Hàm số", "Sự kiện"], c: 0 },
+            { q: "Để thay đổi vẻ ngoài nhân vật, dùng nhóm lệnh?", a: ["Looks", "Motion", "Control", "Variables"], c: 0 },
+            { q: "Khối 'Forever' dùng để làm gì?", a: ["Lặp lại mãi mãi", "Lặp 1 lần", "Dừng chương trình", "Chờ 1 giây"], c: 0 },
+            { q: "Để kiểm tra nhân vật có chạm màu đỏ không, dùng?", a: ["Sensing", "Operators", "Motion", "Events"], c: 0 },
+            { q: "Nhóm lệnh 'Operators' chứa các phép tính?", a: ["Cộng, trừ, nhân, chia", "Di chuyển", "Ẩn hiện", "Phát tin nhắn"], c: 0 },
+            { q: "Để lưu trữ điểm số trong game, em cần dùng?", a: ["Biến (Variable)", "Trang phục", "Âm thanh", "Phông nền"], c: 0 },
+            { q: "Khối lệnh 'Say Hello! for 2 seconds' thuộc nhóm?", a: ["Looks", "Sound", "Motion", "Sensing"], c: 0 },
+            { q: "Tọa độ (0,0) là vị trí nào trên sân khấu?", a: ["Chính giữa", "Góc trên trái", "Góc dưới phải", "Cạnh dưới"], c: 0 },
+            { q: "Để tạo bản sao của nhân vật trong khi chạy, dùng?", a: ["Create clone of myself", "Stamp", "Next costume", "Broadcast"], c: 0 },
+            { q: "Khối 'Wait 1 seconds' nằm trong nhóm lệnh?", a: ["Control", "Events", "Sensing", "Motion"], c: 0 },
+            { q: "Để vẽ hình trong Scratch, em cần thêm phần mở rộng?", a: ["Pen", "Music", "Video Sensing", "Translate"], c: 0 },
+            { q: "Thuật toán là gì?", a: ["Các bước giải quyết một vấn đề", "Một loại máy tính", "Một ngôn ngữ lập trình", "Tên một nhân vật"], c: 0 },
+            { q: "Khi nhân vật đi đến cạnh sân khấu và bật lại, dùng lệnh?", a: ["If on edge, bounce", "Move 10 steps", "Turn 15 degrees", "Go to random position"], c: 0 },
+            { q: "Lệnh 'Broadcast' dùng để làm gì?", a: ["Gửi tin nhắn nội bộ", "Xóa nhân vật", "Đổi màu nền", "Tăng điểm"], c: 0 },
+            { q: "Khối lệnh 'Pick random 1 to 10' nằm ở nhóm?", a: ["Operators", "Variables", "Control", "Sensing"], c: 0 },
+            { q: "Để nhân vật hướng về phía con trỏ chuột, dùng?", a: ["Point towards mouse-pointer", "Move to mouse", "Set x to mouse", "Turn left"], c: 0 },
+            { q: "Biến có thể chứa những loại dữ liệu nào?", a: ["Số và Chữ", "Chỉ số", "Chỉ chữ", "Hình ảnh"], c: 0 },
+            { q: "Để xóa tất cả nét vẽ trên sân khấu, dùng lệnh?", a: ["Erase all", "Clear screen", "Delete pen", "Hide"], c: 0 },
+            { q: "Cấu trúc rẽ nhánh đầy đủ là khối nào?", a: ["If... then... else", "If... then", "Repeat until", "Wait until"], c: 0 },
+            { q: "Trong Scratch, phông nền sân khấu được gọi là?", a: ["Backdrop", "Stage", "Scene", "Wallpaper"], c: 0 },
+            { q: "Lệnh 'Set size to 100%' dùng để làm gì?", a: ["Chỉnh kích thước nhân vật", "Chỉnh âm lượng", "Đổi màu", "Chỉnh độ sáng"], c: 0 },
+            { q: "Để lặp lại hành động cho đến khi chạm cạnh sân khấu?", a: ["Repeat until <touching edge>", "Forever", "Repeat 10", "Wait until"], c: 0 },
+            { q: "Nhóm lệnh 'My Blocks' dùng để làm gì?", a: ["Tự tạo khối lệnh mới", "Chơi nhạc", "Lưu biến", "Xóa nhân vật"], c: 0 },
+            { q: "Lệnh 'Go to front layer' giúp nhân vật?", a: ["Hiện lên trên cùng", "Ẩn xuống dưới cùng", "Di chuyển ra trước", "Đi vào giữa"], c: 0 },
+            { q: "Lệnh 'Stamp' trong nhóm Pen có tác dụng?", a: ["In hình nhân vật lên nền", "Xóa nét vẽ", "Đổi màu bút", "Nhấc bút"], c: 0 },
+            { q: "Để kiểm tra 2 điều kiện cùng lúc, dùng phép toán?", a: ["and", "or", "not", "join"], c: 0 },
+            { q: "Lệnh 'Move -10 steps' sẽ làm nhân vật?", a: ["Lùi lại phía sau", "Đi tới phía trước", "Đi lên", "Đi xuống"], c: 0 },
+            { q: "Trong lập trình, lỗi (Bug) nên được xử lý thế nào?", a: ["Tìm nguyên nhân và sửa (Debug)", "Xóa hết làm lại", "Bỏ qua", "Mua máy mới"], c: 0 },
+            { q: "Lệnh 'Change score by 1' dùng để?", a: ["Tăng biến score thêm 1", "Đặt score bằng 1", "Xóa score", "Hiện score"], c: 0 },
+            { q: "Để nhân vật xoay tròn liên tục, đặt lệnh gì vào Forever?", a: ["Turn 15 degrees", "Move 10 steps", "Next costume", "Change x by 10"], c: 0 },
+            { q: "Lệnh 'Set rotation style' để tránh nhân vật bị?", a: ["Lật ngược khi quay", "Mất màu", "Chạy quá nhanh", "Biến mất"], c: 0 },
+            { q: "Nhóm 'Sensing' giúp nhân vật nhận biết được gì?", a: ["Va chạm, phím bấm, chuột", "Âm thanh", "Màu sắc slide", "Mật khẩu máy tính"], c: 0 },
+            { q: "Để nhân vật di chuyển mượt mà tới một điểm?", a: ["Glide 1 secs to x,y", "Go to x,y", "Move 10 steps", "Change x by"], c: 0 },
+            { q: "Lệnh 'Play sound until done' khác gì 'Start sound'?", a: ["Đợi âm thanh kết thúc mới làm tiếp", "Chơi nhanh hơn", "Chơi to hơn", "Chỉ chơi 1 nửa"], c: 0 },
+            { q: "Một kịch bản (Script) trong Scratch được tạo từ?", a: ["Các khối lệnh gắn với nhau", "Các đoạn văn bản", "Các file ảnh", "Các thư mục"], c: 0 },
+            { q: "Để nhân vật ẩn đi, dùng lệnh?", a: ["Hide", "Show", "Clear", "Ghost"], c: 0 },
+            { q: "Lệnh 'Next costume' thường dùng để tạo hiệu ứng?", a: ["Hoạt hình (chuyển động)", "Đổi màu", "Phát sáng", "Biến mất"], c: 0 },
+            { q: "Phép toán 'mod' trong Scratch dùng để làm gì?", a: ["Chia lấy dư", "Chia lấy nguyên", "Cộng dồn", "Nhân đôi"], c: 0 },
+            { q: "Để kiểm tra một số là số chẵn, ta dùng phép toán?", a: ["n mod 2 = 0", "n mod 2 = 1", "n / 2", "n - 2"], c: 0 },
+            { q: "Tọa độ Y cao nhất của sân khấu Scratch là?", a: ["180", "240", "0", "360"], c: 0 },
+            { q: "Nhóm lệnh 'Music' cho phép nhân vật làm gì?", a: ["Chơi các nhạc cụ", "Vẽ hình", "Dịch tiếng Anh", "Quay video"], c: 0 },
+            { q: "Để dừng toàn bộ chương trình, dùng lệnh?", a: ["Stop all", "Wait", "End", "Delete"], c: 0 },
+            { q: "Khi kéo một khối lệnh vào khu vực Script, nó sẽ?", a: ["Điều khiển nhân vật đang chọn", "Điều khiển tất cả", "Chưa làm gì cả", "Lưu vào bộ nhớ"], c: 0 },
+            { q: "Để nhân vật luôn hướng về phía chuột, ta dùng?", a: ["Forever [Point towards mouse]", "Move to mouse", "If touching mouse", "Set y to mouse"], c: 0 }
+        ]
+    };
+
+    let currentMode = '';
+    let currentLevel = 0;
+    let currentQ = 0;
+    let score = 0;
+    let correctCount = 0;
+    let unlocked = { rookie: 1, warrior: 1, legend: 1 };
+    let quizList = [];
+    let isWaiting = false;
+
+    const icons = {
+        star: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+        lock: '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>'
+    };
+
+    function switchScreen(id) {
+        AudioEngine.init();
+        ['screen-start', 'screen-levels', 'screen-quiz', 'screen-result'].forEach(s => {
+            document.getElementById(s).classList.add('hidden');
+        });
+        document.getElementById(id).classList.remove('hidden');
+        document.getElementById('main-header').style.display = (id === 'screen-start') ? 'flex' : 'none';
+        if(id === 'screen-start') AudioEngine.stopBg();
+    }
+
+    function goMode(mode) {
+        AudioEngine.init();
+        sfx('click');
+        currentMode = mode;
+        const names = { rookie: 'TÂN BINH', warrior: 'CHIẾN BINH', legend: 'HUYỀN THOẠI' };
+        document.getElementById('level-title').innerText = names[mode];
+        renderMap();
+        switchScreen('screen-levels');
+        AudioEngine.startBg(mode);
+    }
+
+    function renderMap() {
+        const container = document.getElementById('map-container');
+        container.innerHTML = '';
+        const alignments = ['center', 'right', 'center', 'left', 'center', 'right'];
+        for (let i = 1; i <= 6; i++) {
+            const isUnlocked = i <= (unlocked[currentMode] || 1);
+            const node = document.createElement('div');
+            node.className = `level-node ${alignments[i-1]} ${isUnlocked ? 'level-active' : 'level-locked'}`;
+            node.innerHTML = `
+                <div class="flex flex-col items-center gap-3">
+                    <div class="level-circle ${isUnlocked ? 'cursor-pointer' : ''}" 
+                         onmouseenter="${isUnlocked ? 'sfx(\'hover\')' : ''}"
+                         onclick="${isUnlocked ? `startQuiz(${i})` : ''}">
+                        <div class="text-white">${isUnlocked ? icons.star : icons.lock}</div>
+                    </div>
+                    <div class="glass px-4 py-1 rounded-full border-none">
+                        <span class="text-[10px] font-black text-slate-400 uppercase">Cấp ${i}</span>
+                    </div>
+                </div>`;
+            container.appendChild(node);
+        }
+    }
+
+    function startQuiz(lvl) {
+        sfx('click');
+        currentLevel = lvl;
+        currentQ = 0; score = 0; correctCount = 0; isWaiting = false;
+        
+        // Lấy dữ liệu từ kho tương ứng
+        const pool = questionsPool[currentMode] || questionsPool.rookie;
+        
+        // Trộn ngẫu nhiên 10 câu từ kho 50 câu để tránh lặp lại
+        quizList = [...pool]
+            .sort(() => Math.random() - 0.5)
+            .slice(0, 10);
+        
+        switchScreen('screen-quiz');
+        showQuestion();
+    }
+
+    function showQuestion() {
+        if (!quizList || !quizList[currentQ]) {
+            exitNow();
+            return;
+        }
+        
+        isWaiting = false;
+        const q = quizList[currentQ];
+        document.getElementById('q-lesson').innerText = `CẤP ĐỘ ${currentLevel}`;
+        document.getElementById('q-progress').innerText = `${currentQ + 1} / 10`;
+        document.getElementById('score-val').innerText = score;
+        document.getElementById('q-text').innerText = q.q;
+
+        const optGrid = document.getElementById('q-options');
+        optGrid.innerHTML = '';
+        
+        // Trộn các lựa chọn để tăng độ khó
+        const correctVal = q.a[q.c];
+        const displayOpts = [...q.a].sort(() => Math.random() - 0.5);
+
+        displayOpts.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = "option-btn w-full p-5 rounded-[1.8rem] text-left font-bold text-white/80 active:scale-95";
+            btn.innerText = opt;
+            btn.onmouseenter = () => sfx('hover');
+            btn.onclick = () => { if(!isWaiting) checkAns(opt === correctVal, btn, correctVal); };
+            optGrid.appendChild(btn);
+        });
+    }
+
+    function checkAns(isCorrect, btn, correct) {
+        isWaiting = true;
+        const all = document.querySelectorAll('#q-options button');
+        all.forEach(b => {
+            b.disabled = true;
+            if(b.innerText === correct) {
+                b.className = "w-full p-5 rounded-[1.8rem] text-left font-black bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400";
+            }
+        });
+
+        if(isCorrect) {
+            sfx('correct');
+            score += 10;
+            correctCount++;
+        } else {
+            sfx('wrong');
+            btn.className = "w-full p-5 rounded-[1.8rem] text-left font-black bg-red-500/20 border-2 border-red-500 text-red-400";
+        }
+
+        setTimeout(() => {
+            if(++currentQ < 10) showQuestion();
+            else showResult();
+        }, 1200);
+    }
+
+    function showResult() {
+        switchScreen('screen-result');
+        document.getElementById('res-score').innerText = `${score} ĐIỂM`;
+        document.getElementById('res-correct-count').innerText = `${correctCount} / 10 CÂU ĐÚNG`;
+        const actions = document.getElementById('res-actions');
+        const resGlow = document.getElementById('res-glow');
+        actions.innerHTML = '';
+
+        const isPassed = correctCount >= 5;
+        if(isPassed) {
+            document.getElementById('res-icon').innerText = "🏆";
+            document.getElementById('res-msg').innerText = "XUẤT SẮC!";
+            resGlow.className = "absolute inset-0 bg-emerald-500/30 blur-3xl rounded-full";
+            if(currentLevel === unlocked[currentMode] && currentLevel < 6) unlocked[currentMode]++;
+            actions.innerHTML = `<button onmouseenter="sfx('hover')" onclick="goMode('${currentMode}')" class="w-full p-6 bg-indigo-600 text-white rounded-[2.5rem] font-black text-xl shadow-xl shadow-indigo-500/20">TIẾP TỤC</button>`;
+        } else {
+            document.getElementById('res-icon').innerText = "💀";
+            document.getElementById('res-msg').innerText = "THỬ LẠI NHÉ!";
+            resGlow.className = "absolute inset-0 bg-red-500/30 blur-3xl rounded-full";
+            actions.innerHTML = `
+                <button onmouseenter="sfx('hover')" onclick="startQuiz(${currentLevel})" class="w-full p-6 bg-orange-600 text-white rounded-[2.5rem] font-black text-xl">THỬ LẠI</button>
+                <button onmouseenter="sfx('hover')" onclick="goMode('${currentMode}')" class="w-full p-4 glass text-white rounded-2xl">BẢN ĐỒ</button>`;
+        }
+    }
+
+    function confirmExit() { sfx('click'); document.getElementById('modal-exit').classList.remove('hidden'); }
+    function closeExit() { sfx('click'); document.getElementById('modal-exit').classList.add('hidden'); }
+    function exitNow() { sfx('click'); closeExit(); switchScreen('screen-start'); }
+</script>
+</body>
+</html>
